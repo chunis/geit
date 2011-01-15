@@ -35,9 +35,13 @@ $tree->parse($str);
 
 my $html = $tree->as_HTML();
 $html = encode("gb2312", $html);
+# print $html;
+
+$html =~ s#(href="(?!http://))#$1http://www.itpub.net/#ig;
+$html =~ s#(src="(?!http://))#$1http://www.itpub.net/#ig;
 print $html;
 
-# $tree->delete; # erase this tree because we're done with it
+$tree->delete;
 
 
 

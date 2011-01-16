@@ -21,74 +21,45 @@ print "fix_time: $fix_time\n";
 print "fix_day : $fix_day\n";
 
 
-my $str;
-my $url = "http://www.itpub.net/forum-61-1.html";
-my $file = "test.html";
-my $output = "new.html";
-# $str = getstore($url, $file);
-# $str = get($url);
+my $output = "output.html";
 
-open my $fh, "<", $file or die "Open $file failed: $!\n";
-my @_str = <$fh>;
-$str = join "", @_str;
+# my $str;
+# my $url = "http://www.itpub.net/forum-61-1.html";
+# my $file = "test.html";
+# # $str = getstore($url, $file);
+# # $str = get($url);
 
-$str = decode("gb2312",$str);
+# open my $fh, "<", $file or die "Open $file failed: $!\n";
+# my @_str = <$fh>;
+# $str = join "", @_str;
 
 my $tree = new HTML::TreeBuilder;
-$tree->parse($str);
-# $tree->dump;
 
 
-my @date;
+
 my $ret_flag = 0;
-foreach my $form ($tree->find_by_tag_name('form')){
-	my $attr = $form->attr('name');
-	# $form->dump if $attr eq "moderate";
-	# $form->delete;
-	next unless defined $attr && $attr eq "moderate";
-	
-	foreach my $tab ($form->find_by_tag_name('table')){
-		if($ret_flag == 1){
-			$tab->delete;
-			next;
-		}
-		
-		# check if the item is fixed as the top items
-		my $top_item = 0;
-		foreach my $img ($tab->find_by_tag_name('img')){
-			my $img_attr = $img->attr('src');
-			$top_item = 1 if $img_attr =~ m#images/itpub/pin_[1-3].gif#;
-		}
-		next if $top_item == 1;
-			
+my @global_form;
 
-		@date = ();
-		foreach my $td ($tab->find_by_tag_name('td')){
-			# print $td->as_text();
-			
-			my $t = $td->find_by_tag_name('span');
-			if($t){
-				push @date, $t->as_text();
-			}
-		}
-		# print "$_\n" foreach(@date);
-		if($#date >= 1){
-			my $ok = check_time_ok($date[-2], $date[-1]);
-			# print "ok = $ok\n";
-			if($ok == 0){
-				$tab->delete;
-			}
-			elsif($ok == -1){
-				$tab->delete;
-				$ret_flag = 1;
-			}
-		}
-		else {
-			print "date: @date\n";
-			warn "Something wrong, check it again!";
-		}
-	}
+my $page = 1;
+while($ret_flag == 0){		# need more items
+	print "-----------> page = $page\n";
+	my $newform = get_more_page($page);
+	$page++;
+	
+	# join all forms
 }
+
+my $form = shift @global_form;
+# my $parent = $form->parent;
+# $parent->push_content(@global_form);
+my $div = $form->look_down('_tag', 'div', 'class', 'spaceborder');
+foreach my $_t ($global_form[0]->find_by_tag_name('table')){
+	$div->push_content($_t);
+}
+
+my $numf = @global_form;
+print "numf = $numf\n";
+# print Dumper $form;
 
 
 my $html = $tree->as_HTML(undef, "  ");
@@ -102,6 +73,7 @@ print $ofh $html;
 $tree->delete;
 
 
+
 sub usage {
 	print "Usage:\n\t$0 <-Xh> <-Xd>\n";
 	print "E.g.:\n";
@@ -111,6 +83,75 @@ sub usage {
 	print "\t$0 -2d3h       : <= 25 hours\n";
 	exit;
 }
+
+sub get_more_page {
+	my $page = shift;
+
+	my @date;
+	my $tree2 = new HTML::TreeBuilder;
+	my $_tree = $page == 1? $tree : $tree2;
+	
+	my $url = "http://www.itpub.net/forum-61-$page.html";
+	my $str = get($url);
+	$str = decode("gb2312",$str);
+	$_tree->parse($str);
+
+	foreach my $form ($_tree->find_by_tag_name('form')){
+		my $attr = $form->attr('name');
+		# $form->dump if $attr eq "moderate";
+		# $form->delete;
+		next unless defined $attr && $attr eq "moderate";
+	
+		# push @global_form, $form if $page == 1;	# save this as the main form
+		push @global_form, $form;
+		
+		foreach my $tab ($form->find_by_tag_name('table')){
+			if($ret_flag == 1){
+				$tab->delete;
+				next;
+			}
+			
+			if($page == 1){
+				# check if the item is fixed as the top items
+				my $top_item = 0;
+				foreach my $img ($tab->find_by_tag_name('img')){
+					my $img_attr = $img->attr('src');
+					$top_item = 1 if $img_attr =~ m#images/itpub/pin_[1-3].gif#;
+				}
+				next if $top_item == 1;
+			}
+
+			@date = ();
+			foreach my $td ($tab->find_by_tag_name('td')){
+				# print $td->as_text();
+				
+				my $t = $td->find_by_tag_name('span');
+				if($t){
+					push @date, $t->as_text();
+				}
+			}
+			# print "$_\n" foreach(@date);
+			if($#date >= 1){
+				my $ok = check_time_ok($date[-2], $date[-1]);
+				# print "ok = $ok\n";
+				if($ok == 0){
+					$tab->delete;
+				}
+				elsif($ok == -1){
+					$tab->delete;
+					$ret_flag = 1;
+				}
+			}
+			else {
+				print "date: @date\n";
+				warn "Something wrong, check it again!";
+			}
+		}
+	}
+	$tree2->delete;
+}
+
+
 
 sub get_argument_hours {
 	foreach(@ARGV){

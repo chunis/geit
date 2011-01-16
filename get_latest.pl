@@ -38,12 +38,6 @@ my $tree = new HTML::TreeBuilder;
 $tree->parse($str);
 # $tree->dump;
 
-# for debug
-# foreach my $b ($tree->find_by_tag_name('table')){
-	# my $tab = $b->attr('bgColor');
-	# $b->dump if $tab eq "#ffffff";
-	# print "$tab\n" if $tab;
-# }
 
 my @date;
 my $ret_flag = 0;
@@ -58,18 +52,29 @@ foreach my $form ($tree->find_by_tag_name('form')){
 			$tab->delete;
 			next;
 		}
+		
+		# check if the item is fixed as the top items
+		my $top_item = 0;
+		foreach my $img ($tab->find_by_tag_name('img')){
+			my $img_attr = $img->attr('src');
+			$top_item = 1 if $img_attr =~ m#images/itpub/pin_[1-3].gif#;
+		}
+		next if $top_item == 1;
+			
+
 		@date = ();
 		foreach my $td ($tab->find_by_tag_name('td')){
 			# print $td->as_text();
+			
 			my $t = $td->find_by_tag_name('span');
 			if($t){
 				push @date, $t->as_text();
 			}
 		}
-		print "$_\n" foreach(@date);
+		# print "$_\n" foreach(@date);
 		if($#date >= 1){
 			my $ok = check_time_ok($date[-2], $date[-1]);
-			print "ok = $ok\n";
+			# print "ok = $ok\n";
 			if($ok == 0){
 				$tab->delete;
 			}
@@ -148,7 +153,7 @@ sub check_time_ok {
 	my $ctime = Date_to_Time(@_ctime);
 	my $mtime = Date_to_Time(@_mtime);
 	
-	if($ctime > $fix_day){
+	if($ctime >= $fix_day){
 		return 1;
 	}
 	elsif($mtime < $fix_time){

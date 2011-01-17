@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 
+# Author: Chunis Deng (chunchengfh@gmail.com)
+# Version: 0.2 @ 2011/01/18
+
+
 use strict;
 use warnings;
 
@@ -23,43 +27,26 @@ print "fix_day : $fix_day\n";
 
 my $output = "output.html";
 
-# my $str;
-# my $url = "http://www.itpub.net/forum-61-1.html";
-# my $file = "test.html";
-# # $str = getstore($url, $file);
-# # $str = get($url);
-
-# open my $fh, "<", $file or die "Open $file failed: $!\n";
-# my @_str = <$fh>;
-# $str = join "", @_str;
-
 my $tree = new HTML::TreeBuilder;
 
-
-
 my $ret_flag = 0;
-my @global_form;
+my $super_flag = 0;
+
+
+my $myparent;
+my @new_content;
+my @a_content;
+my @trees;
 
 my $page = 1;
+
 while($ret_flag == 0){		# need more items
-	print "-----------> page = $page\n";
-	my $newform = get_more_page($page);
+	print "-----------> process page = $page now...\n";
+	get_more_page($page);
 	$page++;
-	
-	# join all forms
 }
 
-my $form = shift @global_form;
-# my $parent = $form->parent;
-# $parent->push_content(@global_form);
-my $div = $form->look_down('_tag', 'div', 'class', 'spaceborder');
-foreach my $_t ($global_form[0]->find_by_tag_name('table')){
-	$div->push_content($_t);
-}
-
-my $numf = @global_form;
-print "numf = $numf\n";
-# print Dumper $form;
+$myparent->push_content(@a_content);
 
 
 my $html = $tree->as_HTML(undef, "  ");
@@ -71,6 +58,9 @@ open my $ofh, ">", $output or die "Open $output for write failed: $!\n";
 print $ofh $html;
 
 $tree->delete;
+foreach (@trees){
+	$_->delete;
+}
 
 
 
@@ -88,24 +78,28 @@ sub get_more_page {
 	my $page = shift;
 
 	my @date;
-	my $tree2 = new HTML::TreeBuilder;
-	my $_tree = $page == 1? $tree : $tree2;
+	my $newtree = new HTML::TreeBuilder;
+	my $_tree = $page == 1? $tree : $newtree;
 	
 	my $url = "http://www.itpub.net/forum-61-$page.html";
 	my $str = get($url);
 	$str = decode("gb2312",$str);
+
 	$_tree->parse($str);
+	$_tree->eof();
 
 	foreach my $form ($_tree->find_by_tag_name('form')){
 		my $attr = $form->attr('name');
 		# $form->dump if $attr eq "moderate";
 		# $form->delete;
 		next unless defined $attr && $attr eq "moderate";
-	
-		# push @global_form, $form if $page == 1;	# save this as the main form
-		push @global_form, $form;
 		
 		foreach my $tab ($form->find_by_tag_name('table')){
+			if($super_flag == 0){
+				$super_flag = 1;
+				$myparent = $tab->parent;
+			}
+
 			if($ret_flag == 1){
 				$tab->delete;
 				next;
@@ -124,7 +118,7 @@ sub get_more_page {
 			@date = ();
 			foreach my $td ($tab->find_by_tag_name('td')){
 				# print $td->as_text();
-				
+
 				my $t = $td->find_by_tag_name('span');
 				if($t){
 					push @date, $t->as_text();
@@ -141,6 +135,10 @@ sub get_more_page {
 					$tab->delete;
 					$ret_flag = 1;
 				}
+				elsif($ok == 1){
+					print "\tThis item is saved\n";
+					push @a_content, $tab;
+				}
 			}
 			else {
 				print "date: @date\n";
@@ -148,9 +146,9 @@ sub get_more_page {
 			}
 		}
 	}
-	$tree2->delete;
+	$_tree = undef;
+	push @trees, $newtree;
 }
-
 
 
 sub get_argument_hours {
@@ -203,4 +201,3 @@ sub check_time_ok {
 	
 	return 0;
 }
-

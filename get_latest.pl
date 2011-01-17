@@ -16,6 +16,13 @@ use Data::Dumper;
 use Date::Calc qw(Date_to_Time Time_to_Date);
 
 
+my @a_content;
+my $ret_flag = 0;
+my $super_flag = 0;
+my $output = "output.html";
+my $myparent;
+my @trees;
+
 # add 8 hours to fix the timezone issue in China
 my $cur_time = time() + 8*3600;
 my $sub_sec = get_argument_hours() * 3600;
@@ -25,21 +32,9 @@ print "fix_time: $fix_time\n";
 print "fix_day : $fix_day\n";
 
 
-my $output = "output.html";
-
 my $tree = new HTML::TreeBuilder;
 
-my $ret_flag = 0;
-my $super_flag = 0;
-
-
-my $myparent;
-my @new_content;
-my @a_content;
-my @trees;
-
 my $page = 1;
-
 while($ret_flag == 0){		# need more items
 	print "-----------> process page = $page now...\n";
 	get_more_page($page);
@@ -48,10 +43,8 @@ while($ret_flag == 0){		# need more items
 
 $myparent->push_content(@a_content);
 
-
 my $html = $tree->as_HTML(undef, "  ");
 $html = encode("gb2312", $html);
-
 $html =~ s#(href="(?!http://))#$1http://www.itpub.net/#ig;
 $html =~ s#(src="(?!http://))#$1http://www.itpub.net/#ig;
 open my $ofh, ">", $output or die "Open $output for write failed: $!\n";
@@ -61,7 +54,6 @@ $tree->delete;
 foreach (@trees){
 	$_->delete;
 }
-
 
 
 sub usage {
@@ -152,6 +144,8 @@ sub get_more_page {
 
 
 sub get_argument_hours {
+	usage() unless @ARGV;
+	
 	foreach(@ARGV){
 		usage() if $_ =~ /-h/i || $_ =~ /-help/i;
 	}

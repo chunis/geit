@@ -72,8 +72,7 @@ sub usage {
 	print "E.g.:\n";
 	print "\t$0 -12h        : <= 12 hours\n";
 	print "\t$0 -2d         : <=  2 days\n";
-	print "\t$0 -2d -3h     : <= 25 hours\n";
-	print "\t$0 -2d3h       : <= 25 hours\n";
+	print "\t$0 -2d -3h     : <= 27 hours\n";
 	exit;
 }
 

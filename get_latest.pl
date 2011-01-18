@@ -15,6 +15,7 @@ use HTML::TreeBuilder;
 use Data::Dumper;
 use Date::Calc qw(Date_to_Time Time_to_Date);
 
+my $VERSION = 0.2;
 
 my @a_content;
 my $ret_flag = 0;
@@ -49,12 +50,22 @@ $html =~ s#(href="(?!http://))#$1http://www.itpub.net/#ig;
 $html =~ s#(src="(?!http://))#$1http://www.itpub.net/#ig;
 open my $ofh, ">", $output or die "Open $output for write failed: $!\n";
 print $ofh $html;
+close($ofh);
+
+system("start $output");
 
 $tree->delete;
 foreach (@trees){
 	$_->delete;
 }
 
+sub get_version {
+	print "This is geit, v$VERSION\n";
+	print "This tool can do filter on itpub.net's ebook page,\n" 
+			. "and left only newly released books after a fixed days/hours\n";
+	print "\nAuthor: Chunis Deng (chunchengfh\@gmail.com)\n";
+	exit;
+}
 
 sub usage {
 	print "Usage:\n\t$0 <-Xh> <-Xd>\n";
@@ -148,6 +159,9 @@ sub get_argument_hours {
 	
 	foreach(@ARGV){
 		usage() if $_ =~ /-h/i || $_ =~ /-help/i;
+	}
+	foreach(@ARGV){
+		get_version() if $_ =~ /-v/i || $_ =~ /-version/i;
 	}
 	foreach(@ARGV){
 		usage() unless $_ =~ /[-\d]+[dh]/i;

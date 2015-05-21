@@ -15,7 +15,8 @@ use HTML::TreeBuilder;
 use Data::Dumper;
 use Date::Calc qw(Date_to_Time Time_to_Date);
 
-my $VERSION = 0.2;
+my $VERSION = "0.2, 2011.01";
+my $AUTHOR = "Chunis Deng (chunchengfh\@gmail.com)";
 
 my @a_content;
 my $ret_flag = 0;
@@ -60,10 +61,9 @@ foreach (@trees){
 }
 
 sub get_version {
-	print "This is geit, v$VERSION\n";
-	print "This tool can do filter on itpub.net's ebook page,\n" 
-			. "and left only newly released books after a fixed days/hours\n";
-	print "\nAuthor: Chunis Deng (chunchengfh\@gmail.com)\n";
+	print "\nThis is geit, v$VERSION, created by $AUTHOR\n\n"
+			. "This tool can do filter on itpub.net's ebook page, and left only newly \n"
+			. "released topics between now and a certain days/hours.\n\n";
 	exit;
 }
 
@@ -82,7 +82,7 @@ sub get_more_page {
 	my @date;
 	my $newtree = new HTML::TreeBuilder;
 	my $_tree = $page == 1? $tree : $newtree;
-	
+
 	my $url = "http://www.itpub.net/forum-61-$page.html";
 	my $str = get($url);
 	$str = decode("gb2312",$str);
@@ -95,7 +95,7 @@ sub get_more_page {
 		# $form->dump if $attr eq "moderate";
 		# $form->delete;
 		next unless defined $attr && $attr eq "moderate";
-		
+
 		foreach my $tab ($form->find_by_tag_name('table')){
 			if($super_flag == 0){
 				$super_flag = 1;
@@ -106,7 +106,7 @@ sub get_more_page {
 				$tab->delete;
 				next;
 			}
-			
+
 			if($page == 1){
 				# check if the item is fixed as the top items
 				my $top_item = 0;
@@ -155,7 +155,7 @@ sub get_more_page {
 
 sub get_argument_hours {
 	usage() unless @ARGV;
-	
+
 	foreach(@ARGV){
 		usage() if $_ =~ /-h/i || $_ =~ /-help/i;
 	}
@@ -165,7 +165,7 @@ sub get_argument_hours {
 	foreach(@ARGV){
 		usage() unless $_ =~ /[-\d]+[dh]/i;
 	}
-	
+
 	my $hours = 0;
 	foreach(@ARGV){
 		if($_ =~ /(\d+)d/i){
@@ -175,7 +175,7 @@ sub get_argument_hours {
 			$hours += $1;
 		}
 	}
-	
+
 	print "Check time before: $hours hours\n\n";
 	$hours;
 }
@@ -185,26 +185,26 @@ sub get_argument_hours {
 #	0: keep going on
 #	1: keep this item
 # 	-1: not check any more items
-sub check_time_ok {			
+sub check_time_ok {
 	my ($d, $t) = @_;		# d: created day, t: last time
-	
+
 	print "Day: $d, Time: $t\n";
-	
+
 	my @_ctime = split /-/, $d;
 	my @_mtime = split /[- :]/, $t;
-	
+
 	push @_ctime, (0, 0, 0);
 	push @_mtime, 0;
-	
+
 	my $ctime = Date_to_Time(@_ctime);
 	my $mtime = Date_to_Time(@_mtime);
-	
+
 	if($ctime >= $fix_day){
 		return 1;
 	}
 	elsif($mtime < $fix_time){
 		return -1;
 	}
-	
+
 	return 0;
 }

@@ -1,0 +1,6 @@
+Geit is a simple tool which can do filter on itpub.net's ebook page, and
+left only newly announced topics between now and a certain days/hours.
+
+However, this function isn't necessary since you can just choose the option
+as "排序:发帖时间" locates at the end of each page. So this code is just
+keep as a reference code base for demonstrating some Perl modules usage.
